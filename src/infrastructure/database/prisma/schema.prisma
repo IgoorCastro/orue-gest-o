@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Size {
+  id   String      @id
+  size ProductSize
+}
+
+model Material {
+  id              String            @id
+  name            String
+  createdAt       DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime          @default(now()) @db.Timestamptz(6)
+  deletedAt       DateTime?         @db.Timestamptz(6)
+  normalizedName  String
+  ProductMaterial ProductMaterial[]
+}
+
+model Model {
+  id             String    @id
+  name           String
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @db.Timestamptz(6)
+  deletedAt      DateTime? @db.Timestamptz(6)
+  normalizedName String
+  products       Product[]
+}
+
+model Color {
+  id             String         @id
+  name           String
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @db.Timestamptz(6)
+  deletedAt      DateTime?      @db.Timestamptz(6)
+  normalizedName String
+  ProductColor   ProductColor[]
+}
+
+model Product {
+  id                                                            String             @id
+  name                                                          String
+  sku                                                           String             @unique(map: "product_sku_unique")
+  barcode                                                       String?            @unique(map: "product_barcode_unique") @db.Char(13)
+  price                                                         Float
+  mlProductId                                                   String?
+  modelId                                                       String?
+  type                                                          ProductType        @default(PRODUCT)
+  createdAt                                                     DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt                                                     DateTime           @default(now()) @db.Timestamptz(6)
+  deletedAt                                                     DateTime?          @db.Timestamptz(6)
+  size                                                          ProductSize?
+  normalizedName                                                String
+  model                                                         Model?             @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  ProductColor                                                  ProductColor[]
+  ProductComponent_ProductComponent_componentProductIdToProduct ProductComponent[] @relation("ProductComponent_componentProductIdToProduct")
+  ProductComponent_ProductComponent_parentProductIdToProduct    ProductComponent[] @relation("ProductComponent_parentProductIdToProduct")
+  ProductMaterial                                               ProductMaterial[]
+  stocks                                                        ProductStock[]
+
+  @@index([modelId], map: "idx_product_model")
+}
+
+model User {
+  id             String          @id
+  name           String
+  role           UserRole
+  createdAt      DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime        @default(now()) @db.Timestamptz(6)
+  deletedAt      DateTime?       @db.Timestamptz(6)
+  password       String
+  nickname       String
+  normalizedName String
+  StockMoviment  StockMoviment[]
+}
+
+model ProductStock {
+  id            String          @id
+  stockId       String
+  productId     String
+  quantity      Int
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime        @default(now()) @db.Timestamptz(6)
+  deletedAt     DateTime?       @db.Timestamptz(6)
+  product       Product         @relation(fields: [productId], references: [id])
+  stock         Stock           @relation(fields: [stockId], references: [id])
+  StockMoviment StockMoviment[]
+
+  @@unique([stockId, productId])
+  @@unique([productId, stockId], map: "uq_productstock_product_stock")
+  @@index([productId], map: "idx_productstock_product")
+  @@index([stockId], map: "idx_productstock_stock")
+}
+
+model ProductComponent {
+  id                                                   String    @id
+  parentProductId                                      String
+  componentProductId                                   String
+  quantity                                             Int?
+  createdAt                                            DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt                                            DateTime  @default(now()) @db.Timestamptz(6)
+  deletedAt                                            DateTime? @db.Timestamptz(6)
+  Product_ProductComponent_componentProductIdToProduct Product   @relation("ProductComponent_componentProductIdToProduct", fields: [componentProductId], references: [id])
+  Product_ProductComponent_parentProductIdToProduct    Product   @relation("ProductComponent_parentProductIdToProduct", fields: [parentProductId], references: [id])
+
+  @@index([componentProductId], map: "fki_ProductComponent_componentProductId_fkey")
+  @@index([parentProductId], map: "fki_ProductComponent_parentProductId_fkey")
+}
+
+model Stock {
+  id                                             String          @id(map: "Estoque_pkey")
+  name                                           String
+  type                                           StockType
+  storeId                                        String?
+  createdAt                                      DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt                                      DateTime        @default(now()) @db.Timestamptz(6)
+  deletedAt                                      DateTime?       @db.Timestamptz(6)
+  products                                       ProductStock[]
+  Store                                          Store?          @relation(fields: [storeId], references: [id], map: "Estoque_storeId_fkey")
+  StockMoviment_StockMoviment_fromStockIdToStock StockMoviment[] @relation("StockMoviment_fromStockIdToStock")
+  StockMoviment_StockMoviment_toStockidToStock   StockMoviment[] @relation("StockMoviment_toStockidToStock")
+}
+
+model Store {
+  id        String    @id(map: "Loja_pkey")
+  name      String
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+  Stock     Stock[]
+}
+
+model ProductColor {
+  id        String  @id
+  productId String
+  colorId   String
+  Color     Color   @relation(fields: [colorId], references: [id])
+  Product   Product @relation(fields: [productId], references: [id])
+
+  @@index([colorId], map: "fki_ProductColor_colorId_fkey")
+  @@index([productId], map: "fki_ProductColor_productId_fkey")
+}
+
+model ProductMaterial {
+  id         String   @id
+  productId  String
+  materialId String
+  Material   Material @relation(fields: [materialId], references: [id])
+  Product    Product  @relation(fields: [productId], references: [id])
+
+  @@index([materialId], map: "fki_ProductMaterial_materialId_fkey")
+  @@index([productId], map: "fki_ProductMaterial_productId_fkey")
+}
+
+model StockMoviment {
+  id                                     String            @id @db.Uuid
+  fromStockId                            String?
+  toStockid                              String?
+  productStockId                         String
+  type                                   StockMovimentType
+  quantity                               Int
+  unitPrice                              Float
+  totalPrice                             Float
+  userId                                 String
+  createdAt                              DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt                              DateTime          @default(now()) @db.Timestamptz(6)
+  deletedAt                              DateTime?         @db.Timestamptz(6)
+  Stock_StockMoviment_fromStockIdToStock Stock?            @relation("StockMoviment_fromStockIdToStock", fields: [fromStockId], references: [id], onDelete: Restrict)
+  ProductStock                           ProductStock      @relation(fields: [productStockId], references: [id])
+  Stock_StockMoviment_toStockidToStock   Stock?            @relation("StockMoviment_toStockidToStock", fields: [toStockid], references: [id], onDelete: Restrict, map: "StockMoviment_toStockId_fkey")
+  User                                   User              @relation(fields: [userId], references: [id])
+
+  @@index([fromStockId], map: "fki_StockMoviment_fromStockId_fkey")
+  @@index([productStockId], map: "fki_StockMoviment_productStockId_fkey")
+  @@index([toStockid], map: "fki_StockMoviment_toStockId_fkey")
+  @@index([userId], map: "fki_StockMoviment_userId_fkey")
+}
+
+enum StockType {
+  MAIN
+  STORE
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  OPERATOR
+}
+
+enum ProductSize {
+  P
+  M
+  G
+  GG
+  XG
+}
+
+enum ProductType {
+  PRODUCT
+  KIT
+  PACKAGE
+}
+
+enum StockMovimentType {
+  INBOUND
+  OUTBOUND
+  TRANSFER
+}

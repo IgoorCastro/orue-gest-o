@@ -1,0 +1,114 @@
+// Hook para controlar os dados da pagina do produto
+// Controla a lista a ser exibida, ativar, desativar
+// e filtragem de dados
+
+import { feedback } from "@/src/ui/lib/feedback";
+import { ProductService } from "@/src/ui/services/product.service";
+import { PaginatedProduct, Product } from "@/src/ui/types/product";
+import { ProductFiltersDto } from "@/src/ui/types/product-filters";
+import { useEffect, useMemo, useState } from "react";
+
+export function useProducts() {
+    // inserir os filtros padrões aqui!
+    // para retornar produtos com withDeleted ou onlyDeleted
+    // passar apenas a key com algum dado simples para o filtro
+    // exemplo: { onlyDeleted: true } ou { onlyDeleted: false }
+    // -> server ira entender a msm coisa! Ira retornar onlyDeleted!
+    // não passar nenhuma opção de deleted ira retornar apenas
+    // produtos não deletedos 'only e with deleted = false'
+    const defaultFilters = {
+    }
+
+    const [products, setProducts] = useState<PaginatedProduct | null>(null); // lista de produtos disponiveis em estoque
+    const [searchFilters, setSearchFilters] = useState<ProductFiltersDto>(defaultFilters); // lista de filtros para lista de produtos
+    const [loading, setLoading] = useState<boolean>(true); // estado de loading
+    const [refreshSignal, setRefreshSignal] = useState<boolean>(false); // estado de controle para atualização da pagina
+
+    const productService = useMemo(() => new ProductService("/product"), []);
+
+    useEffect(() => {
+        productService.findAll(searchFilters)
+            .then((res) => {
+                setProducts(res);
+                setLoading(false);
+            })
+            .catch(console.error);
+    }, [searchFilters, refreshSignal]);
+
+    // função para remover filtros individuais (específica)
+    const handleRemoveFilter = (key: keyof ProductFiltersDto, value?: any) => {
+        setSearchFilters((prev) => {
+            const next = { ...prev };
+
+            if (Array.isArray(next[key])) {
+                // Remove apenas o item do array
+                // next[key] = (next[key] as string[]).filter((v) => v !== value);
+                (next[key] as string[]) = (next[key] as string[]).filter((v) => v !== value);
+                // Se o array ficou vazio, removemos a chave para manter o objeto limpo
+                // if (next[key].length === 0) delete next[key];                
+                if ((next[key] as string[]).length === 0) delete next[key];
+            } else {
+                // Remove a chave inteira (name, size, minPrice, etc)
+                delete next[key];
+            }
+
+            return { ...next };
+        });
+    };
+
+    // função para resetar tudo (genérica)
+    const handleClearFilters = () => {
+        setSearchFilters({}); // Reseta para um objeto vazio
+    };
+
+    // função para desativar um produto
+    const handleConfirmdDeactivation = (productId: string) => {
+        setLoading(true);
+        feedback.loading("Desativando produto..")
+        productService.delete(productId)
+            .then(() => {
+                feedback.dismiss();
+                feedback.success("Produto desativado!");
+                setRefreshSignal(prev => !prev);
+            })
+            .catch(error => {
+                feedback.error(error);
+                setLoading(false);
+            })
+    }
+
+    // função para resturar um produto desativado
+    const handleRestoreProduct = (productId: string) => {
+        setLoading(true);
+        feedback.loading("Desativando produto..")
+        productService.restore(productId)
+            .then(() => {
+                feedback.dismiss();
+                feedback.success("Produto reativado!");
+                setRefreshSignal(prev => !prev);
+            })
+            .catch(error => {
+                feedback.error(error);
+                setLoading(false);
+            })
+    }
+
+    return {
+        products: products?.data,
+        total: products?.total,
+        page: products?.page,
+        totalPages: products?.total && products?.limit
+            ? Math.ceil(products.total / products.limit)
+            : 1,
+        limit: products?.limit,
+        searchFilters,
+        loading,
+
+        setRefreshSignal,
+        setSearchFilters,
+        handleRemoveFilter,
+        handleClearFilters,
+        handleConfirmdDeactivation,
+        handleRestoreProduct,
+    }
+}

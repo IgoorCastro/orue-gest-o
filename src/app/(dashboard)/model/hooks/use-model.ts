@@ -1,0 +1,74 @@
+// hook de domínio responsável pela gestão do ciclo de vida dos modelos
+
+import { feedback } from "@/src/ui/lib/feedback";
+import { ModelService } from "@/src/ui/services/model.service";
+import { Material } from "@/src/ui/types/material";
+import { useEffect, useState, useMemo } from "react";
+
+export function useModel() {
+    const [models, setModels] = useState<Material[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [refreshSignal, setRefreshSignal] = useState<boolean>(false);
+
+    const modelService = useMemo(() => new ModelService("/model"), []);
+
+    useEffect(() => {
+        modelService.findAll()
+            .then((res) => {
+                setModels(res);
+                setLoading(false);
+            })
+            .catch(console.error);
+    }, [refreshSignal]);
+
+    const handleConfirmdDeactivation = (modelId: string) => {
+        setLoading(true);
+        feedback.loading("Desativando modelo...");
+        modelService.delete(modelId)
+            .then(() => {
+                feedback.dismiss();
+                feedback.success("Modelo desativada!");
+                setRefreshSignal(prev => !prev);
+            })
+            .catch(err => {
+                feedback.error(err);
+                setLoading(false);
+            });
+    }
+
+    const handleRestoreProduct = (modelId: string) => {
+        setLoading(true);
+        feedback.loading("Reativando modelo...");
+        modelService.restore(modelId)
+            .then(() => {
+                feedback.dismiss();
+                feedback.success("Modelo reativado!");
+                setRefreshSignal(prev => !prev);
+            })
+            .catch(err => {
+                feedback.error(err);
+                setLoading(false);
+            })
+    }
+
+    const isDisableModel = (deletedAt?: string) => {
+        return !!deletedAt;
+    }
+
+    return {
+        //campos
+        models,
+        loading,
+        refreshSignal,
+
+        //setters
+        setModels,
+        setLoading,
+        setRefreshSignal,
+
+        // funções
+        handleConfirmdDeactivation,
+        handleRestoreProduct,
+        isDisableModel,
+    }
+}
