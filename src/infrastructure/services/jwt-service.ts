@@ -1,15 +1,27 @@
 import { hasRoutePermission, ROUTE_PERMISSIONS } from "@/src/domain/auth/permissions";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyToken, getTokenFromRequest } from "@/src/infrastructure/services/auth";
+
+type AuthResult =
+  | {
+    valid: true;
+    decoded: DecodedToken;
+  }
+  | {
+    valid: false;
+    error: NextResponse;
+  };
 
 interface DecodedToken {
   sub: string;
-  role: string;
+  role: UserRole;
   exp?: number;
 }
 
 export function authGuard(request: NextRequest) {
-  const token = request.cookies.get('auth-token')?.value;
+  const token = getTokenFromRequest(request);
   const { pathname } = request.nextUrl;
 
   // 1. EXCEÇÕES: Não aplicar segurança para APIs, arquivos internos ou assets
@@ -22,10 +34,10 @@ export function authGuard(request: NextRequest) {
   ) {
     // Se estiver logado e tentar ir para /login via URL, manda para a home
     if (pathname === '/login' && token) {
-      try{
-        validateToken(token);
-        return NextResponse.redirect(new URL('/', request.url));
-      }catch { }
+      try {
+        const valid = verifyToken(token);
+        if (valid) return NextResponse.redirect(new URL('/', request.url));
+      } catch { }
     }
     return NextResponse.next();
   }
@@ -35,16 +47,10 @@ export function authGuard(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  let decoded: DecodedToken;
-
-  try {
-    decoded = validateToken(token);
-  } catch {
-    // token inválido, expirado ou adulterado
+  const decoded = verifyToken(token);
+  if (!decoded) {
     const response = NextResponse.redirect(new URL("/login", request.url));
-    // apaga o token da sessão
     response.cookies.delete("auth-token");
-
     return response;
   }
 
@@ -52,8 +58,7 @@ export function authGuard(request: NextRequest) {
   const isProtectedRoute = ROUTE_PERMISSIONS.some(route => pathname.startsWith(route.path));
 
   if (isProtectedRoute) {
-    if (!hasRoutePermission(decoded.role, pathname)) {
-      // Redireciona para a página base da role dele (ex: /admin ou /operator)
+    if (!hasRoutePermission(decoded.role as UserRole, pathname)) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
@@ -62,7 +67,7 @@ export function authGuard(request: NextRequest) {
 }
 
 // checagem de autenticação
-export async function getAuthToken(request: NextRequest) {
+export async function getAuthToken(request: NextRequest): Promise<AuthResult> {
   const token = request.cookies.get("auth-token")?.value;
 
   // verifica a existencia do token
@@ -76,8 +81,7 @@ export async function getAuthToken(request: NextRequest) {
 
   // validando o token
   try {
-    const decoded = validateToken(token);
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     return { valid: true, decoded };
   } catch (error) {
     return {
@@ -96,9 +100,4 @@ export async function getAuthToken(request: NextRequest) {
 }
 
 // valida o token e verifica a assinatura
-function validateToken(token: string) {
-  return jwt.verify(
-    token,
-    process.env.JWT_SECRET!
-  ) as DecodedToken;
-}
+// validateToken removed in favor of shared verifyToken in src/infrastructure/services/auth.ts

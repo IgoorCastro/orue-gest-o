@@ -8,15 +8,16 @@ import mapDomainErrorToStatus from "../mapDomainErrorToStatus.error";
 import { FindColorsUseCase } from "@/src/application/color/usecase/color-find.usecase";
 import { z } from "zod";
 import { CreateColorSchema } from "@/src/lib/schemas/color.schema";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 // Rota para criação de uma nova cor
 export async function POST(req: NextRequest) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
         
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -64,6 +65,15 @@ export async function POST(req: NextRequest) {
 // retorna uma lista de usuarios
 export async function GET(req: NextRequest) {
     try {
+        const auth = await getAuthToken(req);
+        if (!auth.valid) return auth.error;
+        
+        if (auth.decoded?.role !== UserRole.ADMIN)
+            return NextResponse.json(
+                { error: "Forbidden: Admin only" },
+                { status: 403 }
+            );
+            
         const { searchParams } = new URL(req.url);
 
         const name = searchParams.get("name") ?? undefined;

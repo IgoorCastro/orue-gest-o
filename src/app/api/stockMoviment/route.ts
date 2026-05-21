@@ -15,17 +15,18 @@ import { UUIDGenerator } from "@/src/infrastructure/services/uuid-generator";
 import { PrismaProductStockRepository } from "@/src/infrastructure/database/repositories/prisma-product-stock.repository";
 import { StockMovimentFilterMapper } from "@/src/application/mappers/stock-moviment-filter.mapper";
 import { FindStockMovimentsUseCase } from "@/src/application/stock-moviment/use-case/stock-moviment-find.usecase";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 // Rota POST
 // body esperado: type, unitPrice, totalPrice, quantity, fromStockId, toStockId, productStockId, userId
 export async function POST(req: NextRequest) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (!['ADMIN', 'MANAGER'].includes(auth.decoded.role))
+        if (![UserRole.ADMIN, UserRole.MANAGER].includes(auth.decoded.role))
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -74,11 +75,11 @@ export async function POST(req: NextRequest) {
 // orderBy: ordena em ordem crescente ou decrescente os campos [name, price e createdAt] / uso: api/product?name=Calça&orderBy=name:desc&
 export async function GET(req: NextRequest) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (!['ADMIN', 'MANAGER'].includes(auth.decoded.role))
+        if (![UserRole.ADMIN, UserRole.MANAGER].includes(auth.decoded.role))
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }

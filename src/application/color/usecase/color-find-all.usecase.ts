@@ -10,6 +10,9 @@ export class FindColorAllUseCase {
         return colors.map(color => ({
             id: color.id,
             name: color.name,
+            createdAt: color.createdAt,
+            updatedAt: color.updatedAt,
+            deletedAt: color.deletedAt,
         }))
     }
 }

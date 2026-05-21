@@ -3,6 +3,7 @@ import { SidebarProvider } from "@/src/ui/components/ui/sidebar"
 import { AppSidebar } from "@/src/ui/components/shared/layout/app-sidebar";
 import { TooltipProvider } from "@/src/ui/components/ui/tooltip"
 import { cookies } from "next/headers";
+import { verifyToken } from "@/src/infrastructure/services/auth";
 import { UserProvider } from "@/src/ui/contexts/user-context";
 
 export const metadata: Metadata = {
@@ -22,20 +23,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   let user: User = null;
 
-  // Buscar dados do usuário do servidor (validação segura)
+  // Decodifica o token localmente no servidor (evita fetch interno)
   if (token) {
     try {
-      const response = await fetch("http://localhost:3000/api/auth/me/", {
-        method: "GET",
-        headers: {
-          "Cookie": `auth-token=${token}`,
-        },
-      });
-      if (response.ok) {
-        user = await response.json();
-      }
+      const decoded = verifyToken(token);
+      if (decoded) user = decoded;
     } catch (error) {
-      // Silenciosamente falhar - usuário será redirecionado
       console.error("Erro ao buscar dados do usuário", error);
     }
   }

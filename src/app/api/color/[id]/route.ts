@@ -8,16 +8,17 @@ import { DeleteColorByIdUseCase } from "@/src/application/color/usecase/color-de
 import { FindColorByIdUseCase } from "@/src/application/color/usecase/color-find-byId.usecase";
 import { z } from "zod";
 import { UpdateColorSchema } from "@/src/lib/schemas/color.schema";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
 import { UUIDSchema } from "@/src/lib/schemas/uuid-generic.schema";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
         
         // Rota acessada apenas por ADMIN
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -51,10 +52,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
         
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -98,10 +99,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 // delete por id
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
-        if (auth.decoded.role !== 'ADMIN'){
+        if (auth.decoded?.role !== UserRole.ADMIN){
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }

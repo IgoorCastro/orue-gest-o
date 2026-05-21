@@ -9,17 +9,18 @@ import mapDomainErrorToStatus from "../../mapDomainErrorToStatus.error";
 import { GetProductStockValueUseCase } from "@/src/application/product-stock/usecase/product-stock-get-stock-value";
 import { PrismaProductStockRepository } from "@/src/infrastructure/database/repositories/prisma-product-stock.repository";
 import { prisma } from "@/src/infrastructure/database/prisma/client";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 //
 export async function GET(req: NextRequest) {
     try{
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
         const { searchParams } = new URL(req.url);
 
         // Rota protegida - ADMIN ONLY
-        if (!['ADMIN', 'MANAGER'].includes(auth.decoded.role))
+        if (![UserRole.ADMIN, UserRole.MANAGER].includes(auth.decoded.role))
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }

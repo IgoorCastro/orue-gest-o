@@ -10,18 +10,19 @@ import { PrismaMaterialRepository } from "@/src/infrastructure/database/reposito
 import { PrismaModelRepository } from "@/src/infrastructure/database/repositories/prisma-model.repository";
 import { DefaultSkuGenerator } from "@/src/domain/services/default-sku-generator";
 import { DeleteProductByIdUseCase } from "@/src/application/product/use-case/product-delete.usecase";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
 import { UpdateProductSchema } from "@/src/lib/schemas/product.schema";
 import { z } from "zod";
 import { UUIDSchema } from "@/src/lib/schemas/uuid-generic.schema";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 // GET via ID com params
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -56,11 +57,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // name, price, mlProductId, modelId, type, size, colors e materials
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -120,11 +121,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 // DELETE POR ID
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }

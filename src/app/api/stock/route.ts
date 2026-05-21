@@ -13,17 +13,18 @@ import { UUIDGenerator } from "@/src/infrastructure/services/uuid-generator";
 import { FindStocksUseCase } from "@/src/application/stock/use-case/stock-find.usecase";
 import { StockType } from "@/src/domain/enums/stock-type.enum";
 import { PrismaStoreRepository } from "@/src/infrastructure/database/repositories/prisma-store.repository";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 // Rota POST
 // body esperado: name, type e storeId
 export async function POST(req: NextRequest) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -66,13 +67,13 @@ export async function POST(req: NextRequest) {
 // Rota acessivel a todas roles
 export async function GET(req: NextRequest) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // rota protegida - ADMIN E MANAGER!
-        if (!['ADMIN', 'MANAGER'].includes(auth.decoded.role))
+        if (![UserRole.ADMIN, UserRole.MANAGER].includes(auth.decoded.role))
             return NextResponse.json(
-                { error: "Forbidden: Admin only" },
+                { error: "Forbidden: Admin or Manager only" },
                 { status: 403 }
             );
         

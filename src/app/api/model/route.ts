@@ -7,17 +7,18 @@ import { PrismaModelRepository } from "@/src/infrastructure/database/repositorie
 import { CreateModelUseCase } from "@/src/application/model/usecase/model-create.usecase";
 import { FindModelsUseCase } from "@/src/application/model/usecase/model-find.usecase";
 import { z } from "zod";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
 import { CreateModelSchema } from "@/src/lib/schemas/model.schema";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 // Rota para criação de um novo modelo
 export async function POST(req: NextRequest) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -64,11 +65,11 @@ export async function POST(req: NextRequest) {
 // retorna uma lista de modelos
 export async function GET(req: NextRequest) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }

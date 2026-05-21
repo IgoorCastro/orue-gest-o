@@ -14,6 +14,9 @@ export class FindMateriallAllUseCase {
         return materials.map(material => ({
             id: material.id,
             name: material.name,
+            createdAt: material.createdAt,
+            updatedAt: material.updatedAt,
+            deletedAt: material.deletedAt,
         }))
     }
 }

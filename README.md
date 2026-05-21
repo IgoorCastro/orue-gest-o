@@ -108,6 +108,22 @@ O **ORUE Monolito** é um sistema de gestão de estoque empresarial desenvolvido
 ```
 src/
 ├── app/                           # Next.js App Router
+---
+
+## 🚀 Deployment (Vercel)
+
+Before deploying to Vercel (or any hosting), ensure the following environment variables are set in the project settings:
+
+- `DATABASE_URL` — PostgreSQL connection string used by Prisma
+- `JWT_SECRET` — Secret used to sign and verify JWT tokens (required)
+- `UPSTASH_REDIS_REST_URL` — (optional) Upstash Redis REST URL for rate limiting
+- `UPSTASH_REDIS_REST_TOKEN` — (optional) Upstash Redis REST token for rate limiting
+- `ALLOWED_ORIGINS` — (optional) Comma-separated list of allowed CORS origins (used by `src/proxy.ts`)
+
+Notes:
+- The app reads `auth-token` from HttpOnly cookies. Ensure `JWT_SECRET` matches the secret used when issuing the cookie.
+- If you need server-to-server calls to internal API routes during SSR, prefer decoding JWT on the server (see `src/infrastructure/services/auth.ts`) rather than issuing internal fetches to relative URLs.
+
 │   ├── (auth)/                   # Grupo de rotas de autenticação
 │   │   └── login/page.tsx
 │   ├── (dashboard)/              # Grupo de rotas protegidas

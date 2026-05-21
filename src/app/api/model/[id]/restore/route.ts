@@ -7,18 +7,19 @@ import mapDomainErrorToStatus from "../../../mapDomainErrorToStatus.error";
 import { prisma } from "@/src/infrastructure/database/prisma/client";
 import { PrismaModelRepository } from "@/src/infrastructure/database/repositories/prisma-model.repository";
 import { RestoreModelByIdUseCase } from "@/src/application/model/usecase/model-restore.usecase";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
 import { UUIDSchema } from "@/src/lib/schemas/uuid-generic.schema";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 // ROTA DE RESTORE
 // Restaura um modelo 'deletado'
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (auth.decoded.role !== 'ADMIN')
+        if (auth.decoded?.role !== UserRole.ADMIN)
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }

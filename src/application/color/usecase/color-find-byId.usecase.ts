@@ -14,6 +14,9 @@ export class FindColorByIdUseCase {
         return {
             id: color.id,
             name: color.name,
+            createdAt: color.createdAt,
+            updatedAt: color.updatedAt,
+            deletedAt: color.deletedAt,
         };
     }
 }

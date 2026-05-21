@@ -7,19 +7,20 @@ import mapDomainErrorToStatus from "../../mapDomainErrorToStatus.error";
 import { FindStockMovimentByIdUseCase } from "@/src/application/stock-moviment/use-case/stock-moviment-find-byId.usecase";
 import { PrismaStockMovimentRepository } from "@/src/infrastructure/database/repositories/prisma-stock-moviment.repository";
 import { prisma } from "@/src/infrastructure/database/prisma/client";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
 import { UUIDSchema } from "@/src/lib/schemas/uuid-generic.schema";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 // Rota GET
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try{
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // Rota protegida - ADMIN ONLY
-        if (!['ADMIN', 'MANAGER'].includes(auth.decoded.role))
+        if (![UserRole.ADMIN, UserRole.MANAGER].includes(auth.decoded.role))
             return NextResponse.json(
-                { error: "Forbidden: Admin only" },
+                { error: "Forbidden: Admin or Manager only" },
                 { status: 403 }
             );
 

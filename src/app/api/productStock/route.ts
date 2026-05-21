@@ -14,18 +14,19 @@ import { UUIDGenerator } from "@/src/infrastructure/services/uuid-generator";
 import { PrismaProductRepository } from "@/src/infrastructure/database/repositories/prisma-product.repository";
 import { FindProductStocksUseCase } from "@/src/application/product-stock/usecase/product-stock-find.usecase";
 import { ProductStockFilterMapper } from "@/src/application/mappers/product-stock-filter.mapper";
-import { getAuthTokem } from "@/src/infrastructure/services/jwt-service";
+import { getAuthToken } from "@/src/infrastructure/services/jwt-service";
 import { CreateProductStockSchema } from "@/src/lib/schemas/product-stock-schema";
+import { UserRole } from "@/src/domain/enums/user-role.enum";
 
 // Rota POST
 // body esperado: productId, stockId e quantity
 export async function POST(req: NextRequest) {
     try {
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // rota protegida - ADMIN E MANAGER!
-        if (!['ADMIN', 'MANAGER'].includes(auth.decoded.role))
+        if (![UserRole.ADMIN, UserRole.MANAGER].includes(auth.decoded.role))
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
@@ -71,11 +72,11 @@ export async function POST(req: NextRequest) {
 //
 export async function GET(req: NextRequest) {
     try{
-        const auth = await getAuthTokem(req);
+        const auth = await getAuthToken(req);
         if (!auth.valid) return auth.error;
 
         // rota protegida - ADMIN E MANAGER!
-        if (!['ADMIN', 'MANAGER'].includes(auth.decoded.role))
+        if (![UserRole.ADMIN, UserRole.MANAGER].includes(auth.decoded.role))
             return NextResponse.json(
                 { error: "Forbidden: Admin only" },
                 { status: 403 }
